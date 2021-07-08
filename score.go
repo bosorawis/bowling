@@ -2,6 +2,8 @@ package bowling
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 var validInput = []rune{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '/', 'x', 'X'}
@@ -13,44 +15,9 @@ var (
 const (
 	totalPins = 10
 	maxFrame  = 10
+	lastFrame = 9
 	maxThrows = 21
 )
-
-type frame struct {
-	downPins       []int
-	score          int
-	remainingBonus int
-	number         int
-}
-
-func (f *frame) completed() bool {
-	return f.remainingBonus <= 0
-}
-
-func strikeFrame(rolls []int, num int) *frame {
-	frame := &frame{
-		downPins:       rolls,
-		score:          sum(rolls),
-		number:         num,
-	}
-
-	if len(rolls) == 1 && rolls[0] == 10 { // strike
-		frame.remainingBonus = 2
-	} else if len(rolls) == 2 && rolls[0] + rolls[1] == 10 {
-		frame.remainingBonus = 1
-	} else {
-		frame.remainingBonus = 0
-	}
-	return frame
-}
-func newFrame(rolls []int, num int) *frame {
-	return &frame{
-		downPins:       []int{totalPins},
-		score:          10,
-		remainingBonus: 1,
-		number:         num,
-	}
-}
 
 type game struct {
 	currentFrame int
@@ -58,15 +25,15 @@ type game struct {
 	scoringQueue []*frame
 }
 
-func newGame() *game {
+func NewGame() *game {
 	return &game{
 		currentFrame: 0,
 		frames:       [maxFrame]*frame{},
 	}
 }
 
-func (g *game) calculateBonus(rolls []int){
-	for i := 0 ; i < len(g.scoringQueue); i++ {
+func (g *game) calculateBonus(rolls []int) {
+	for i := 0; i < len(g.scoringQueue); i++ {
 		scoreFrame := g.scoringQueue[i]
 		for j := 0; j < len(rolls); j++ {
 			if scoreFrame.remainingBonus <= 0 {
@@ -88,50 +55,85 @@ func (g *game) calculateBonus(rolls []int){
 	g.scoringQueue = temp
 }
 
-func (g *game) Record(rolls []int) error {
-	if len(rolls) > 3 {
-		return fmt.Errorf("cannot throw more than 3 balls")
+func translateInput(s string) ([]int, error) {
+	splited := strings.Split(s, ",")
+	if len(splited) < 1 || len(splited) > 3 {
+		return nil, fmt.Errorf("expect 1-3 plays separated by comma")
 	}
-
-	var newFrame *frame
-	g.calculateBonus(rolls)
-	if len(rolls) == 1 && rolls[0] == 10 { // strike
-		newFrame = strikeFrame(g.currentFrame)
-		g.scoringQueue = append(g.scoringQueue, newFrame)
-	} else if len(rolls) == 2 && rolls[0] + rolls[1] == 10{ // spare
-
-	} else {
-		newFrame = &frame{
-			downPins: rolls,
-			score:    sum(rolls),
+	result := []int{}
+	for i, c := range splited {
+		if c == "X" {
+			result = append(result, 10)
+		} else if c == "/" {
+			result = append(result, totalPins-result[i-1])
+		} else if c == "-" {
+			result = append(result, 0)
+		} else {
+			point, err := strconv.Atoi(c)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, point)
 		}
 	}
 
-	g.frames[g.currentFrame] = newFrame
+	if len(result) < 3 && sum(result) > 10 {
+		return nil, fmt.Errorf("invalid input: total score cannot be higher than 10 [got %d]", sum(result))
+	}
+
+
+	return result, nil
+}
+
+// Play records the scored played by human
+func (g *game) Play(s string) error {
+	roll, err := translateInput(s)
+	if err != nil {
+		return err
+	}
+	return g.record(roll)
+}
+
+// CurrentFrame prints out currently in-play frame (+1 for human readability)
+func (g *game) CurrentFrame() int {
+	if g.currentFrame + 1 > maxFrame {
+		return maxFrame
+	}
+	return g.currentFrame + 1
+}
+
+// Finished checks if the game is completed
+func (g *game) Finished() bool {
+	if g.currentFrame >= maxFrame {
+		return true
+	}
+	return false
+}
+
+func (g *game) record(rolls []int) error {
+	if g.Finished() {
+		return fmt.Errorf("game is already over")
+	}
+	if len(rolls) > 3 {
+		return fmt.Errorf("cannot throw more than 3 balls")
+	}
+	g.calculateBonus(rolls)
+	currentFrame := newFrame(rolls, g.currentFrame)
+	if currentFrame.remainingBonus > 0 {
+		g.scoringQueue = append(g.scoringQueue, currentFrame)
+	}
+	g.frames[g.currentFrame] = currentFrame
 	g.currentFrame += 1
 	return nil
 }
 
-func sum(arr []int) (total int) {
-	for _, v := range arr {
-		total += v
-	}
-	return
-}
-
+// Score returns the score board
 func (g *game) Score() []int {
 	frameScores := []int{}
 	for i := 0; i < g.currentFrame; i++ {
-		if g.frames[i].completed(){
+		if g.frames[i].completed() {
 			frameScores = append(frameScores, g.frames[i].score)
 		}
 	}
 	return frameScores
-}
-
-func (g *game) Done() bool {
-	if g.frames[maxFrame-1] != nil {
-		return true
-	}
-	return false
 }
