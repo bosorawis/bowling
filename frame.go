@@ -13,6 +13,13 @@ func sum(arr []int) (total int) {
 	return
 }
 
+func (f *frame) getScore() int {
+	if !f.completed(){
+		return 0
+	}
+	return f.score
+}
+
 func newFrame(rolls []int, num int) *frame {
 	frame := &frame{
 		downPins: rolls,

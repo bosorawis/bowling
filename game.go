@@ -63,7 +63,7 @@ func translateInput(s string) ([]int, error) {
 	result := []int{}
 	for i, c := range splited {
 		if c == "X" {
-			result = append(result, 10)
+			result = append(result, totalPins)
 		} else if c == "/" {
 			result = append(result, totalPins-result[i-1])
 		} else if c == "-" {
@@ -76,12 +76,6 @@ func translateInput(s string) ([]int, error) {
 			result = append(result, point)
 		}
 	}
-
-	if len(result) < 3 && sum(result) > 10 {
-		return nil, fmt.Errorf("invalid input: total score cannot be higher than 10 [got %d]", sum(result))
-	}
-
-
 	return result, nil
 }
 
@@ -91,7 +85,39 @@ func (g *game) Play(s string) error {
 	if err != nil {
 		return err
 	}
+
+	vErr := g.validateRoll(roll)
+	if vErr != nil {
+		return vErr
+	}
+
 	return g.record(roll)
+}
+
+func (g *game) validateRoll(rolls []int) error {
+	if len(rolls) > 3 {
+		return fmt.Errorf("only allow maximum of 3 throws")
+	}
+	if len(rolls) < 3 && sum(rolls) > 10 {
+		return fmt.Errorf("invalid input: total score cannot be higher than 10 [got %d]", sum(rolls))
+	}
+	if g.currentFrame == lastFrame {
+		if len(rolls) < 2 {
+			return fmt.Errorf("you get at least 2 rolls in the last frame")
+		}
+		if rolls[0] + rolls[1] < totalPins && len(rolls) >= 3{
+			return fmt.Errorf("only allow 3 throws if the pins are cleanedout")
+		}
+		if rolls[0] + rolls[1] >= totalPins && len(rolls) <= 2 {
+			return fmt.Errorf("miss an extra throw for the last frame")
+		}
+	} else {
+		if len(rolls) >= 3 {
+			return fmt.Errorf("only last frame is allowed up to 3 rolls")
+		}
+
+	}
+	return nil
 }
 
 // CurrentFrame prints out currently in-play frame (+1 for human readability)
@@ -110,12 +136,20 @@ func (g *game) Finished() bool {
 	return false
 }
 
+func (g *game) FinalScore() int {
+	total := 0
+  	for _, f := range g.frames {
+  		if f != nil{
+			total += f.getScore()
+		}
+	}
+	return total
+}
+
+
 func (g *game) record(rolls []int) error {
 	if g.Finished() {
 		return fmt.Errorf("game is already over")
-	}
-	if len(rolls) > 3 {
-		return fmt.Errorf("cannot throw more than 3 balls")
 	}
 	g.calculateBonus(rolls)
 	currentFrame := newFrame(rolls, g.currentFrame)

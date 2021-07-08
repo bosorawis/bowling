@@ -22,7 +22,7 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		fmt.Printf("scoring: <%s> for frame %d\n", play, currentFrame)
+		fmt.Printf("scoring: '%s' for frame #%d\n", play, currentFrame)
 		playErr := g.Play(play)
 		if playErr != nil {
 			fmt.Printf("failed to score: %v\n", playErr)
@@ -31,6 +31,8 @@ func main() {
 		fmt.Printf("finished frame #%d\n", currentFrame)
 		printGameState(g)
 	}
+	fmt.Printf("Total score is %d\n", g.FinalScore())
+	fmt.Println("good bye!")
 }
 
 func printGameState(g gameStateViewer) {
