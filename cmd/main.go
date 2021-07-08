@@ -9,7 +9,8 @@ import (
 )
 
 type gameStateViewer interface {
-	Score() []int
+	CurrentScore() int
+	ScoreCard() []int
 	CurrentFrame() int
 }
 
@@ -36,13 +37,13 @@ func main() {
 }
 
 func printGameState(g gameStateViewer) {
-	fmt.Printf("Current Score is %v\n", g.Score())
+	fmt.Printf("ScoreCard: %v | Current is %v\n", g.ScoreCard(), g.CurrentScore())
 	fmt.Println("----------------------------")
 }
 
 func input(frame int) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("record your score for frame %d: ", frame)
+	fmt.Printf(">>> record your score for frame %d: ", frame)
 	userInput, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err

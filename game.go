@@ -6,17 +6,11 @@ import (
 	"strings"
 )
 
-var validInput = []rune{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '/', 'x', 'X'}
-
-var (
-	ErrValidation = fmt.Errorf("invalid input")
-)
 
 const (
 	totalPins = 10
 	maxFrame  = 10
 	lastFrame = 9
-	maxThrows = 21
 )
 
 type game struct {
@@ -146,7 +140,6 @@ func (g *game) FinalScore() int {
 	return total
 }
 
-
 func (g *game) record(rolls []int) error {
 	if g.Finished() {
 		return fmt.Errorf("game is already over")
@@ -161,8 +154,8 @@ func (g *game) record(rolls []int) error {
 	return nil
 }
 
-// Score returns the score board
-func (g *game) Score() []int {
+// ScoreCard returns the score board
+func (g *game) ScoreCard() []int {
 	frameScores := []int{}
 	for i := 0; i < g.currentFrame; i++ {
 		if g.frames[i].completed() {
@@ -170,4 +163,9 @@ func (g *game) Score() []int {
 		}
 	}
 	return frameScores
+}
+
+// Score total score at the current frame
+func (g *game) CurrentScore() int {
+	return sum(g.ScoreCard())
 }

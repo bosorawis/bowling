@@ -50,10 +50,22 @@ func TestRecordAndScore(t *testing.T) {
 				wantTotal:   0,
 			},
 			{
-				description: "rough game",
+				description: "rough game with better ending",
 				input:       []string{"-,-", "-,-", "-,-", "-,-", "-,-", "-,-", "-,-", "-,-", "-,-", "-,9"},
 				want:        []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 9},
 				wantTotal:   9,
+			},
+			{
+				description: "more realistic game",
+				input:       []string{"X", "5,/", "6,2", "6,/", "X", "X", "0,9", "0,/", "9,0", "X,X,X"},
+				want:        []int{20, 16, 8, 20, 20, 19, 9, 19, 9, 30},
+				wantTotal:   170,
+			},
+			{
+				description: "more realistic game",
+				input:       []string{"8,/", "5,4", "9,-", "X", "X", "5,/", "5,3", "6,3", "9,/", "9,/,X"},
+				want: []int{15, 9, 9, 25, 20, 15, 8, 9, 19, 20},
+				wantTotal: 149,
 			},
 		}
 		for _, tc := range testcases {
@@ -64,7 +76,7 @@ func TestRecordAndScore(t *testing.T) {
 					t.Fatalf("input %v: unexpected error %v", tc.input, err)
 				}
 			}
-			got := g.Score()
+			got := g.ScoreCard()
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("input %v. want %v got %v", tc.input, tc.want, got)
 			}
